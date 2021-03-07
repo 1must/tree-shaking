@@ -1,0 +1,19 @@
+{
+  "name": "tree-shaking",
+  "version": "1.0.0",
+  "description": "mini tree-shaking implemention",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tree",
+    "shaking"
+  ],
+  "author": "yawen.xiao",
+  "license": "ISC",
+  "dependencies": {
+    "escodegen": "^2.0.0",
+    "esprima": "^4.0.1"
+  }
+}
