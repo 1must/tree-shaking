@@ -78,6 +78,10 @@ module.exports = class Context {
         this.declaration2Ast.set(decl.id.name, decl);
       })
     }
+    if (type === 'IfStatement' && this.astNode.alternate) {
+      // 'else' and 'else if'
+      new Context(this.astNode.alternate, this.parent);
+    }
   }
 
   getBody = () => {
@@ -113,11 +117,6 @@ module.exports = class Context {
         return;
       }
       new Context(astNode, this);
-
-      if (type === 'IfStatement' && this.astNode.alternate) {
-        // 'else' and 'else if'
-        new Context(this.astNode.alternate, this);
-      }
     }
 
     // const f = func(); or have side effect
