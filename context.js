@@ -73,13 +73,9 @@ module.exports = class Context {
     const { type } = this.astNode;
     const body = this.getBody();
     this.traverseContextTopStmt(body);
-    if (type === 'IfStatement') {
-      // 'else' and 'else if'
-      new Context(this.astNode.alternate, this.parent);
-    }
     if(type === 'ForStatement') {
-      this.astNode.init.declarations.froEach(decl => {
-        this.declarationSet.add(decl.id.name);
+      this.astNode.init.declarations.forEach(decl => {
+        this.declaration2Ast.set(decl.id.name, decl);
       })
     }
   }
@@ -117,6 +113,11 @@ module.exports = class Context {
         return;
       }
       new Context(astNode, this);
+
+      if (type === 'IfStatement' && this.astNode.alternate) {
+        // 'else' and 'else if'
+        new Context(this.astNode.alternate, this);
+      }
     }
 
     // const f = func(); or have side effect
@@ -179,15 +180,14 @@ module.exports = class Context {
 
   // dead code elimination
   markAllSideEffect = () => {
-    this.children.forEach(child => child.markAllSideEffect());
     const body = this.getBody();
     body.forEach(this.traverseSideEffect);
+    this.children.forEach(child => child.markAllSideEffect());
   }
 
   DCE = () => {
     this.children.forEach(child => child.DCE());
     const body = this.getBody();
-    console.log(body);
     this.getBodyParent().body = this.getDCEAstBody(body);
   }
   
