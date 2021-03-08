@@ -1,9 +1,9 @@
 
 const fs = require('fs');
-const Module = require('module');
+const Module = require('./module');
 
-export default class TreeShaker {
-  constructor(entryName, directory, outPutDirectory = './dist') {
+module.exports = class TreeShaker {
+  constructor(entryName, directory, outPutDirectory = 'dist') {
     this.cachedModuleName = new Map();
     this.modules = [];
     this.directory = directory;
@@ -29,7 +29,7 @@ export default class TreeShaker {
     module.connectedModules.forEach(moduleInfo => {
       const { path } = moduleInfo;
       const newModule = this.getModuleByName(path);
-      this.connectToOtherModule(module, newModule, moduleInfo);
+      this.connectModules(module, newModule, moduleInfo);
       this.traverseModuleGraph(newModule);
     })
   }
@@ -37,7 +37,7 @@ export default class TreeShaker {
   getModuleByName = (name) => {
     let module = this.cachedModuleName.get(name);
     if(!module) {
-      module = new Module(this.direction, name);
+      module = new Module(this.directory, name);
       this.modules.push(module);
       this.cachedModuleName.set(name, module);
     }
@@ -45,6 +45,10 @@ export default class TreeShaker {
   }
 
   output = () => {
+    if(!this.outputDirectory) {
+      return;
+    }
+    fs.mkdirSync(this.outputDirectory, { recursive: true });
     this.modules.forEach(module => {
       module.DCE();
       const path = `${this.outputDirectory}/${module.name}.js`;

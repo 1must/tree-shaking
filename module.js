@@ -1,9 +1,9 @@
 const esprima = require('esprima');
 const escodegen = require('escodegen');
 const fs = require('fs');
-const Context = require('context');
+const Context = require('./context');
 
-export default class Module {
+module.exports = class Module {
   // name in direction
   constructor(directory, name) {
     this.name = name;
@@ -12,12 +12,12 @@ export default class Module {
     const codeBuffer = fs.readFileSync(path);
     const ast = esprima.parseModule(codeBuffer.toString());
 
+    this.exportNameSet = new Set(); // not include export default
+    this.defaultExport = '';
+
     // module graph
     this.connectedModules = [];
     this.rootContext = new Context(ast, null, this.handlePart);
-
-    this.exportNameSet = new Set(); // not include export default
-    this.defaultExport = '';
   }
 
   // part is file top-statement
@@ -45,10 +45,16 @@ export default class Module {
       }
       this.connectedModules.push(moduleInfo);
     } else if (type === 'ExportNamedDeclaration') {
-      const { declarations } = part;
-      declarations.forEach(decl => {
-        this.exportNameSet.add(decl.id.name);
-      })
+      const { declaration} = part;
+      if (declaration.type === 'FunctionDeclaration') {
+        this.exportNameSet.add(declaration.id.name)
+      }
+      if (declaration.type === 'VariableDeclaration') {
+        const { declarations } = declaration;
+        declarations.forEach(decl => {
+          this.exportNameSet.add(decl.id.name);
+        })
+      }
     } else if (type === 'ExportDefaultDeclaration') {
       this.defaultExport = part.declaration.name;
     }
@@ -61,7 +67,7 @@ export default class Module {
     this.rootContext.DCE();
   }
   checkHasSideEffect = (decl) => {
-    this.rootContext.usedDeclSet.has(decl);
+    return this.rootContext.usedDeclSet.has(decl);
   }
 
   resolveImportExport = (exported) => {

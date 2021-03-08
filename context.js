@@ -1,4 +1,4 @@
-class Context {
+module.exports = class Context {
   // Program, IfStatement, ForStatement, WhileStatement, ExpressionStatement, FunctionDeclaration
   constructor(astNode, parent = null, topStatementHandler) {
     this.astNode = astNode;
@@ -47,10 +47,17 @@ class Context {
       } else if (type === 'FunctionDeclaration') {
         this.declaration2Ast.set(astNode.id.name, astNode);
       } else if (type === 'ExportNamedDeclaration') {
-        const declarations = astNode.declaration.declarations;
-        declarations.forEach((decl) => {
-          this.declaration2Ast.set(decl.id.name, decl);
-        });
+        const { declaration } = astNode;
+        if (declaration.type === 'FunctionDeclaration') {
+          this.declaration2Ast.set(declaration.id.name, declaration);
+        }
+        if (declaration.type === 'VariableDeclaration') {
+          const declarations = declaration.declarations;
+          declarations.forEach((decl) => {
+            this.declaration2Ast.set(decl.id.name, decl);
+          });
+        }
+        
       } else if (type === 'ExportDefaultDeclaration') {
         this.declaration2Ast.set(astNode.declaration.name, astNode);
       }
@@ -75,11 +82,11 @@ class Context {
   getBody = () => {
     const {type} = this.astNode;
     if(type === 'IfStatement') return this.astNode.consequent.body;
-    return this.astNode.body;
+    return this.astNode.body.body || this.astNode.body;
   }
 
   traverseSideEffect = (astNode) => {
-    findAndSetIdentifier = (obj) => {
+    const findAndSetIdentifier = (obj) => {
       if(typeof obj !== 'object') return;
       const { type } = obj;
       if (type === 'Identifier') {
@@ -94,19 +101,28 @@ class Context {
     if(type.endsWith('Statement')) {
       if (type === 'ExpressionStatement') {
         findAndSetIdentifier(astNode);
+        return;
       }
       new Context(astNode, this);
     }
 
-    // const f = func();  have side effect
+    // const f = func(); or have side effect
     if (type === 'VariableDeclaration') {
       const { declarations } = astNode;
       declarations.forEach(decl => findAndSetIdentifier(decl.init));
     }
+    // export const f = func();
+    if (type === 'ExportNamedDeclaration') {
+      const {declaration} = astNode;
+      if (declaration.type === 'VariableDeclaration') {
+        const { declarations } = astNode;
+      declarations.forEach(decl => findAndSetIdentifier(decl.init));
+      }
+    }
   }
 
   getDCEAstBody = (body) => {
-    body.filter(astNode => {
+    return body.filter(astNode => {
       const { type } = astNode;
       if (type === 'VariableDeclaration') {
         const { declarations } = astNode;
@@ -126,14 +142,25 @@ class Context {
         return false;
       }
       if (type === 'ExportNamedDeclaration') {
-        const declarations = astNode.declaration.declarations;
-        const newDecls = declarations.filter((decl) => {
-          const name = decl.id.name;
+        const { declaration } = astNode;
+        if (declaration.type === 'FunctionDeclaration') {
+          const name = declaration.id.name;
           if(this.usedDeclSet.has(name)) return true;
           return false;
-        });
-        astNode.declaration = newDecls;
-        return newDecls.length > 0 ? true : false;
+        }
+        if (declaration.type === 'VariableDeclarator') {
+          const declarations =
+            declaration.declarations;
+
+          const newDecls = declarations.filter((decl) => {
+            const name = decl.id.name;
+            if (this.usedDeclSet.has(name)) return true;
+            return false;
+          });
+          astNode.declaration = newDecls;
+          return newDecls.length > 0 ? true : false;
+        }
+        return true;
       }
       if (type === 'ExportDefaultDeclaration') {
         this.declaration2Ast.set(astNode.declaration.name, astNode);

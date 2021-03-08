@@ -1,6 +1,7 @@
-const TreeShaker = require('treeShaker');
+const path = require('path');
+const TreeShaker = require('./treeShaker');
 
-
-const ts = new TreeShaker('index', __dirname+'/test');
+console.log(__dirname + '/test');
+const ts = new TreeShaker('index', __dirname + '/test');
 
 ts.output();
