@@ -18,7 +18,7 @@
 可以在[https://astexplorer.net/](https://astexplorer.net/)观察不同类型的结构
 
 ##### context.js
-对全局（Program）和还有 IfStatement，ForStatement，WhileStatement 以及被使用的函数FunctionDeclaration 建立 Context，新建上下文时遍历该上线文的顶层语句，收集所有顶层变量声明（`getDeclarations`函数）。
+对全局（Program）和还有 IfStatement，ForStatement，WhileStatement 以及被使用的函数FunctionDeclaration 建立 Context，新建上下文时遍历该上线文的顶层语句，收集所有顶层变量声明（`getDeclarations`函数）。先序遍历创建子上下文。
 ##### module.js
 每个 module 包括一个 rootContext 便是该文件全局上下文。收集所有的 import 变量和 export 变量，并通过 import 语句建立 module graph 。connectedModules 收集了对应module的引入文件的信息。
 ##### treeShaker.js
