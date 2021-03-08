@@ -24,3 +24,7 @@
 ##### treeShaker.js
 通过指定入口文件深度优先遍历 module graph 标记每个文件有副作用的  `part`。过滤每个文件中没有被标记的 `part`。通过[escodegen](https://github.com/estools/escodegen)生成js文件。
 本 demo 只关注 tree shaking 不支持 bundler 打包成一个文件。
+```shell
+node . 或者 node index.js 运行
+```
+将 test 文件夹下的代码 Tree shaking 之后输出在 dist 文件夹下面。
