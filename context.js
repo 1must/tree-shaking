@@ -19,11 +19,16 @@ module.exports = class Context {
     if(this.usedDeclSet.has(decl)) return;
     const astNode = this.declaration2Ast.get(decl)
     if(astNode) {
+      this.usedDeclSet.add(decl);
+      
       const { type } = astNode;
       if (type === 'FunctionDeclaration') {
-        new Context(astNode, this.parent);
+        new Context(astNode, this);
       }
-      this.usedDeclSet.add(decl);
+      // export function xxx() {}
+      if (type === 'ExportNamedDeclaration') {
+        new Context(astNode.declaration, this);
+      }
       return;
     }
     this.parent && this.parent.setUsedDecl(decl);
@@ -49,7 +54,7 @@ module.exports = class Context {
       } else if (type === 'ExportNamedDeclaration') {
         const { declaration } = astNode;
         if (declaration.type === 'FunctionDeclaration') {
-          this.declaration2Ast.set(declaration.id.name, declaration);
+          this.declaration2Ast.set(declaration.id.name, astNode);
         }
         if (declaration.type === 'VariableDeclaration') {
           const declarations = declaration.declarations;
@@ -82,7 +87,15 @@ module.exports = class Context {
   getBody = () => {
     const {type} = this.astNode;
     if(type === 'IfStatement') return this.astNode.consequent.body;
+    if (type === 'ExportNamedDeclaration') return this.astNode.declaration.body.body;
     return this.astNode.body.body || this.astNode.body;
+  }
+
+  getBodyParent = () => {
+    const { type } = this.astNode;
+    if (type === 'IfStatement') return this.astNode.consequent;
+    if (type === 'ExportNamedDeclaration') return this.astNode.declaration.body;
+    return this.astNode.body.body ? this.astNode.body : this.astNode;
   }
 
   traverseSideEffect = (astNode) => {
@@ -127,43 +140,37 @@ module.exports = class Context {
       if (type === 'VariableDeclaration') {
         const { declarations } = astNode;
         const newDecls = declarations.filter((decl) => {
-          const name = decl.id.name
-          if(this.usedDeclSet.has(name)) {
-            return true;
-          }
-          return false;
+          const name = decl.id.name;
+          return this.usedDeclSet.has(name);
         })
-        astNode.declaration = newDecls;
-        return newDecls.length > 0 ? true : false;
+        astNode.declarations = newDecls;
+        return newDecls.length > 0;
       }
       if (type === 'FunctionDeclaration') {
         const name = astNode.id.name;
-        if(this.usedDeclSet.has(name)) return true;
-        return false;
+        return this.usedDeclSet.has(name);
       }
       if (type === 'ExportNamedDeclaration') {
         const { declaration } = astNode;
         if (declaration.type === 'FunctionDeclaration') {
           const name = declaration.id.name;
-          if(this.usedDeclSet.has(name)) return true;
-          return false;
+          return this.usedDeclSet.has(name);;
         }
-        if (declaration.type === 'VariableDeclarator') {
+        if (declaration.type === 'VariableDeclaration') {
           const declarations =
             declaration.declarations;
 
           const newDecls = declarations.filter((decl) => {
             const name = decl.id.name;
-            if (this.usedDeclSet.has(name)) return true;
-            return false;
+            return this.usedDeclSet.has(name);
           });
-          astNode.declaration = newDecls;
-          return newDecls.length > 0 ? true : false;
+          declaration.declarations = newDecls;
+          return newDecls.length > 0;
         }
         return true;
       }
       if (type === 'ExportDefaultDeclaration') {
-        this.declaration2Ast.set(astNode.declaration.name, astNode);
+        return this.usedDeclSet.has(astNode.declaration.name);
       }
 
       return true;
@@ -180,7 +187,8 @@ module.exports = class Context {
   DCE = () => {
     this.children.forEach(child => child.DCE());
     const body = this.getBody();
-    this.astNode.body = this.getDCEAstBody(body);
+    console.log(body);
+    this.getBodyParent().body = this.getDCEAstBody(body);
   }
   
 }
