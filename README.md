@@ -17,14 +17,14 @@
 
 可以在[https://astexplorer.net/](https://astexplorer.net/)观察不同类型的结构
 
-##### context.js
-对全局（Program）和还有 IfStatement，ForStatement，WhileStatement 以及被使用的函数FunctionDeclaration 建立 Context，新建上下文时遍历该上线文的顶层语句，收集所有顶层变量声明（`getDeclarations`函数）。先序遍历创建子上下文。
+##### scope.js
+对全局（Program）和还有 IfStatement，ForStatement，WhileStatement 以及被使用的函数FunctionDeclaration 建立 Scope，新建范围（Scope）时遍历该上线文的顶层语句，收集所有顶层变量声明（`getDeclarations`函数）。先序遍历创建子范围。
 ##### module.js
-每个 module 包括一个 rootContext 便是该文件全局上下文。收集所有的 import 变量和 export 变量，并通过 import 语句建立 module graph 。connectedModules 收集了对应module的引入文件的信息。
+每个 module 包括一个 rootScope 便是该文件全局范围。收集所有的 import 变量和 export 变量，并通过 import 语句建立 module graph 。connectedModules 收集了对应module的引入文件的信息。
 ##### treeShaker.js
 通过指定入口文件深度优先遍历 module graph 标记每个文件有副作用的  `part`。过滤每个文件中没有被标记的 `part`。通过[escodegen](https://github.com/estools/escodegen)生成js文件。
 本 demo 只关注 tree shaking 不支持 bundler 打包成一个文件。
 ```shell
 node . 或者 node index.js 运行
 ```
-将 test 文件夹下的代码 Tree shaking 之后输出在 dist 文件夹下面。
+将 demo 文件夹下的代码 Tree shaking 之后输出在 dist 文件夹下面。

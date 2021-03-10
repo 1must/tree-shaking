@@ -1,7 +1,7 @@
 const esprima = require('esprima');
 const escodegen = require('escodegen');
 const fs = require('fs');
-const Context = require('./context');
+const Scope = require('./scope');
 
 module.exports = class Module {
   // name in direction
@@ -17,7 +17,7 @@ module.exports = class Module {
 
     // module graph
     this.connectedModules = [];
-    this.rootContext = new Context(ast, null, this.handlePart);
+    this.rootScope = new Scope(ast, null, this.handlePart);
   }
 
   // part is file top-statement
@@ -61,20 +61,20 @@ module.exports = class Module {
   }
 
   generateSideEffectCodeFromAst = () => {
-    return escodegen.generate(this.rootContext.astNode);
+    return escodegen.generate(this.rootScope.astNode);
   }
   DCE = () => {
-    this.rootContext.DCE();
+    this.rootScope.DCE();
   }
   checkHasSideEffect = (decl) => {
-    return this.rootContext.usedDeclSet.has(decl);
+    return this.rootScope.usedDeclSet.has(decl);
   }
 
   resolveImportExport = (exported) => {
-    return this.rootContext.setUsedDecl(exported);
+    return this.rootScope.setUsedDecl(exported);
   }
 
   markAllSideEffect = () => {
-    this.rootContext.markAllSideEffect();
+    this.rootScope.markAllSideEffect();
   }
 }

@@ -1,13 +1,13 @@
-module.exports = class Context {
+module.exports = class Scope {
   // Program, IfStatement, ForStatement, WhileStatement, ExpressionStatement, FunctionDeclaration
   constructor(astNode, parent = null, topStatementHandler) {
     this.astNode = astNode;
-    this.parent = parent; // parent Context
+    this.parent = parent; // parent Scope
     if(parent) parent.children.push(this);
     this.children = [];
     this.topStatementHandler = topStatementHandler
 
-    // all current context top declaration
+    // all current scope top declaration
     this.declaration2Ast = new Map();
     this.usedDeclSet = new Set();
 
@@ -23,18 +23,18 @@ module.exports = class Context {
       
       const { type } = astNode;
       if (type === 'FunctionDeclaration') {
-        new Context(astNode, this);
+        new Scope(astNode, this);
       }
       // export function xxx() {}
       if (type === 'ExportNamedDeclaration') {
-        new Context(astNode.declaration, this);
+        new Scope(astNode.declaration, this);
       }
       return;
     }
     this.parent && this.parent.setUsedDecl(decl);
   }
 
-  traverseContextTopStmt = (astNodes) => {
+  traverseScopeTopStmt = (astNodes) => {
     astNodes.forEach(astNode => {
       const { type } = astNode;
       this.topStatementHandler && this.topStatementHandler(astNode);
@@ -72,7 +72,7 @@ module.exports = class Context {
   getDeclarations = () => {
     const { type } = this.astNode;
     const body = this.getBody();
-    this.traverseContextTopStmt(body);
+    this.traverseScopeTopStmt(body);
     if(type === 'ForStatement') {
       this.astNode.init.declarations.forEach(decl => {
         this.declaration2Ast.set(decl.id.name, decl);
@@ -80,7 +80,7 @@ module.exports = class Context {
     }
     if (type === 'IfStatement' && this.astNode.alternate) {
       // 'else' and 'else if'
-      new Context(this.astNode.alternate, this.parent);
+      new Scope(this.astNode.alternate, this.parent);
     }
   }
 
@@ -116,7 +116,7 @@ module.exports = class Context {
         findAndSetIdentifier(astNode);
         return;
       }
-      new Context(astNode, this);
+      new Scope(astNode, this);
     }
 
     // const f = func(); or have side effect

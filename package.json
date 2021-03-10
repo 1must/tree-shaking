@@ -15,5 +15,8 @@
   "dependencies": {
     "escodegen": "^2.0.0",
     "esprima": "^4.0.1"
+  },
+  "devDependencies": {
+    "jest": "^27.0.0-next.1"
   }
 }
